@@ -158,11 +158,15 @@
             </intent-filter>
         </service>
 
-        <!-- Edge Server: On-device OpenAI-compatible API server -->
+<!-- Edge Server: On-device OpenAI-compatible API server -->
         <service
             android:name=".edgeserver.EdgeServerService"
-            android:exported="false"
-            android:foregroundServiceType="specialUse" />
+            android:exported="true"
+            android:foregroundServiceType="specialUse">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+            </intent-filter>
+        </service>
 
         <!-- Claw: On-device GUI Agent -->
         <service
