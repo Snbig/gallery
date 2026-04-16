@@ -59,8 +59,17 @@ override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
     val port = intent?.getIntExtra("port", EdgeServer.DEFAULT_PORT) ?: EdgeServer.DEFAULT_PORT
     startForeground(NOTIFICATION_ID, buildNotification(host, port))
 
-    server = EdgeServerManager.server
-    if (server == null || server?.isAlive != true) {
+    val existingServer = EdgeServerManager.server
+    if (existingServer != null && existingServer.isAlive) {
+      server = existingServer
+      Log.i(TAG, "Using existing server on $host:$port")
+    } else if (server != null && server?.isAlive == true) {
+      EdgeServerManager.server = server
+      Log.i(TAG, "Using local server on $host:$port")
+    } else {
+      try {
+        server?.stop()
+      } catch (_: Exception) {}
       server = EdgeServer(hostname = host, port = port)
       EdgeServerManager.server = server
       try {
