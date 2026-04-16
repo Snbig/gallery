@@ -245,7 +245,7 @@ private fun handleStreamingResponse(
     val pipedIn = PipedInputStream(pipedOut, 64 * 1024)
     val done = AtomicBoolean(false)
 
-Thread {
+    Thread {
       val latch = CountDownLatch(1)
       lockAcquired.lock()
       try {
