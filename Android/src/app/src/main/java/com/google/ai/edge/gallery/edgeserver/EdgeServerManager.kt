@@ -141,13 +141,15 @@ private var service: EdgeServerService? = null
 
 /** Bind a loaded model so the server can serve inference requests. */
   fun bindModel(model: Model, helper: LlmModelHelper, displayName: String) {
+    val alreadyBound = server?.activeModel?.instance != null
+    Log.i(TAG, "bindModel called: displayName=$displayName, alreadyBound=$alreadyBound, modelInstance=${model.instance != null}")
     server?.activeModel = model
     server?.activeModelHelper = helper
     server?.activeModelDisplayName = displayName
     service?.setActiveModel(model, helper, displayName)
     _state.value = _state.value.copy(modelName = displayName)
     saveModelName(displayName)
-    Log.i(TAG, "Model bound: $displayName")
+    Log.i(TAG, "Model bound: $displayName, helper=${helper.javaClass.simpleName}")
   }
 
   /** Unbind the current model. */

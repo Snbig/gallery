@@ -81,9 +81,12 @@ class EdgeServer(
     val uri = session.uri ?: ""
     val method = session.method
 
-    // Auto-discover model if not yet bound.
+// Auto-discover model if not yet bound.
     if (activeModel?.instance == null) {
+      Log.w(TAG, "No model instance - activeModel=${activeModel != null}, instance=${activeModel?.instance != null}")
       tryAutoDiscoverModel()
+    } else {
+      Log.d(TAG, "Model already loaded: ${activeModelDisplayName}")
     }
 
     return try {
