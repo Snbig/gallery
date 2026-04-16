@@ -492,13 +492,14 @@ fun GalleryNavHost(
       }
     }
 
-    // Edge Server page.
+// Edge Server page.
     composable(
       route = ROUTE_EDGE_SERVER,
       enterTransition = { slideUpEnter() },
       exitTransition = { slideDownExit() },
     ) {
       EdgeServerScreen(
+        modelManagerViewModel = modelManagerViewModel,
         onBack = {
           enableHomeScreenAnimation = false
           navController.navigateUp()

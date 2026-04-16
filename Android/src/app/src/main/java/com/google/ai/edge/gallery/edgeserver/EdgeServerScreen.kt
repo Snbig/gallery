@@ -18,6 +18,7 @@ package com.google.ai.edge.gallery.edgeserver
 
 import android.widget.Toast
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -38,6 +39,8 @@ import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -65,6 +68,8 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.google.ai.edge.gallery.data.Model
+import com.google.ai.edge.gallery.ui.modelmanager.ModelManagerViewModel
 
 /**
  * Full-screen control panel for the Edge Server.
@@ -72,10 +77,23 @@ import androidx.compose.ui.unit.sp
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EdgeServerScreen(onBack: () -> Unit) {
+fun EdgeServerScreen(
+  modelManagerViewModel: ModelManagerViewModel,
+  onBack: () -> Unit,
+) {
   val state by EdgeServerManager.state.collectAsState()
+  val modelManagerUiState by modelManagerViewModel.uiState.collectAsState()
   val context = LocalContext.current
   val clipboard = LocalClipboardManager.current
+
+  // Get available models from tasks
+  val availableModels = remember(modelManagerUiState.tasks) {
+    modelManagerUiState.tasks.flatMap { it.models }.distinctBy { it.name }
+  }
+  var selectedModelForServer by remember(state.modelName) {
+    mutableStateOf(availableModels.find { it.name == state.modelName || it.displayName == state.modelName })
+  }
+  var showModelDropdown by remember { mutableStateOf(false) }
 
   Scaffold(
     topBar = {
@@ -137,12 +155,70 @@ fun EdgeServerScreen(onBack: () -> Unit) {
               textStyle = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 14.sp),
             )
           }
-          if (state.isRunning) {
+if (state.isRunning) {
             Text(
               text = "Stop server to change settings",
               style = MaterialTheme.typography.bodySmall,
               color = MaterialTheme.colorScheme.onSurfaceVariant,
               modifier = Modifier.padding(top = 4.dp),
+            )
+          }
+        }
+      }
+
+      // ── Model selector ──
+      Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+      ) {
+        Column(modifier = Modifier.padding(20.dp)) {
+          Text(
+            text = "Model",
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.SemiBold,
+          )
+          Spacer(Modifier.height(12.dp))
+          
+          Box(modifier = Modifier.fillMaxWidth()) {
+            Text(
+              text = selectedModelForServer?.displayName ?: selectedModelForServer?.name ?: "Select a model",
+              modifier = Modifier
+                .fillMaxWidth()
+                .clickable { showModelDropdown = true }
+                .padding(vertical = 12.dp),
+              style = MaterialTheme.typography.bodyMedium,
+            )
+            DropdownMenu(
+              expanded = showModelDropdown,
+              onDismissRequest = { showModelDropdown = false },
+              modifier = Modifier.fillMaxWidth(0.9f),
+            ) {
+              availableModels.forEach { model ->
+                DropdownMenuItem(
+                  text = { Text(model.displayName.ifEmpty { model.name }) },
+                  onClick = {
+                    selectedModelForServer = model
+                    showModelDropdown = false
+                    // Also update the server's active model display name
+                    if (state.isRunning) {
+                      EdgeServerManager.bindModel(
+                        model = model,
+                        helper = model.runtimeHelper,
+                        displayName = model.displayName.ifEmpty { model.name },
+                      )
+                    }
+                  },
+                )
+              }
+            }
+          }
+          
+          if (state.isRunning) {
+            Spacer(Modifier.height(8.dp))
+            Text(
+              text = "Model will be used for API inference",
+              style = MaterialTheme.typography.bodySmall,
+              color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
           }
         }
