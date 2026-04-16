@@ -20,6 +20,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
+import android.content.SharedPreferences
 import android.os.IBinder
 import android.util.Log
 import com.google.ai.edge.gallery.data.Model
@@ -56,8 +57,32 @@ object EdgeServerManager {
   /** Callback invoked by the server when it needs a model. Set by NavGraph. */
   @Volatile var modelFinderCallback: (() -> Unit)? = null
 
-  private var service: EdgeServerService? = null
+private var service: EdgeServerService? = null
   private var bound = false
+  private var prefs: SharedPreferences? = null
+  private var prefsLoaded = false
+
+  fun init(context: Context) {
+    if (!prefsLoaded) {
+      prefs = context.getSharedPreferences("edge_server_prefs", Context.MODE_PRIVATE)
+      prefsLoaded = true
+    }
+  }
+
+  /** Save model name to persistent storage. */
+  private fun saveModelName(name: String) {
+    prefs?.edit()?.putString("model_name", name)?.apply()
+  }
+
+  /** Load saved model name from persistent storage. */
+  fun loadSavedModelName(): String? {
+    if (!prefsLoaded) return null
+    return prefs?.getString("model_name", null)
+  }
+
+  fun clearSavedModel() {
+    prefs?.edit()?.remove("model_name")?.apply()
+  }
 
   private val connection = object : ServiceConnection {
     override fun onServiceConnected(name: ComponentName?, binder: IBinder?) {
@@ -114,13 +139,14 @@ object EdgeServerManager {
     Log.i(TAG, "Server stopped")
   }
 
-  /** Bind a loaded model so the server can serve inference requests. */
+/** Bind a loaded model so the server can serve inference requests. */
   fun bindModel(model: Model, helper: LlmModelHelper, displayName: String) {
     server?.activeModel = model
     server?.activeModelHelper = helper
     server?.activeModelDisplayName = displayName
     service?.setActiveModel(model, helper, displayName)
     _state.value = _state.value.copy(modelName = displayName)
+    saveModelName(displayName)
     Log.i(TAG, "Model bound: $displayName")
   }
 
@@ -131,6 +157,7 @@ object EdgeServerManager {
     server?.activeModelDisplayName = ""
     service?.clearActiveModel()
     _state.value = _state.value.copy(modelName = "")
+    clearSavedModel()
   }
 
   private fun refreshState() {

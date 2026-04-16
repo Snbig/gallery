@@ -52,6 +52,7 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
 import com.google.ai.edge.gallery.ui.modelmanager.ModelManagerViewModel
 import com.google.ai.edge.gallery.ui.theme.GalleryTheme
+import com.google.ai.edge.gallery.edgeserver.EdgeServerManager
 import com.google.ai.edge.litertlm.ExperimentalApi
 import com.google.ai.edge.litertlm.ExperimentalFlags
 import com.google.firebase.analytics.FirebaseAnalytics
@@ -66,8 +67,11 @@ class MainActivity : ComponentActivity() {
   private var splashScreenAboutToExit: Boolean = false
   private var contentSet: Boolean = false
 
-  override fun onCreate(savedInstanceState: Bundle?) {
+override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
+
+    // Initialize EdgeServerManager with context
+    EdgeServerManager.init(this)
 
     // Debug: Dump all intent extras to see what FCM unloads
     intent.extras?.let { extras ->
