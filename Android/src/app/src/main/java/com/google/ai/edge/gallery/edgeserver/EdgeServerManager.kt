@@ -50,9 +50,8 @@ object EdgeServerManager {
   private val _state = MutableStateFlow(ServerState())
   val state: StateFlow<ServerState> = _state.asStateFlow()
 
-  /** Direct server reference for immediate model binding. */
+/** Direct server reference for immediate model binding. */
   @Volatile var server: EdgeServer? = null
-    private set
 
   /** Callback invoked by the server when it needs a model. Set by NavGraph. */
   @Volatile var modelFinderCallback: (() -> Unit)? = null
