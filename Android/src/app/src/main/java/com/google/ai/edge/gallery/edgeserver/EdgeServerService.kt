@@ -87,12 +87,13 @@ override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
 
 private fun syncModelFromManager() {
     val manager = EdgeServerManager.server
+    Log.d(TAG, "syncModelFromManager: manager=${manager != null}, server=${server != null}, manager.activeModel=${manager?.activeModel?.instance != null}")
     if (manager != null && server != null) {
       server?.activeModel = manager.activeModel
       server?.activeModelHelper = manager.activeModelHelper
       server?.activeModelDisplayName = manager.activeModelDisplayName
       if (manager.activeModelDisplayName.isNotEmpty()) {
-        Log.i(TAG, "Synced model from manager: ${manager.activeModelDisplayName}")
+        Log.i(TAG, "Synced model from manager: displayName=${manager.activeModelDisplayName}, instance=${manager.activeModel?.instance != null}")
       }
     }
     // If no model synced, check saved model name
