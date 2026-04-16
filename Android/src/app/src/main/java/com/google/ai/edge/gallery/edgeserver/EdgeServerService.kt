@@ -54,13 +54,15 @@ class EdgeServerService : Service() {
     createNotificationChannel()
   }
 
-  override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
     val host = intent?.getStringExtra("host") ?: EdgeServer.DEFAULT_HOST
     val port = intent?.getIntExtra("port", EdgeServer.DEFAULT_PORT) ?: EdgeServer.DEFAULT_PORT
     startForeground(NOTIFICATION_ID, buildNotification(host, port))
 
-    if (server == null || !server!!.isAlive) {
+    server = EdgeServerManager.server
+    if (server == null || server?.isAlive != true) {
       server = EdgeServer(hostname = host, port = port)
+      EdgeServerManager.server = server
       try {
         server?.start()
         Log.i(TAG, "Edge Server started on $host:$port")
@@ -78,17 +80,25 @@ class EdgeServerService : Service() {
     super.onDestroy()
   }
 
-  fun setActiveModel(model: Model, helper: LlmModelHelper, displayName: String) {
+fun setActiveModel(model: Model, helper: LlmModelHelper, displayName: String) {
+    server = EdgeServerManager.server
     server?.activeModel = model
     server?.activeModelHelper = helper
     server?.activeModelDisplayName = displayName
+    EdgeServerManager.server?.activeModel = model
+    EdgeServerManager.server?.activeModelHelper = helper
+    EdgeServerManager.server?.activeModelDisplayName = displayName
     Log.i(TAG, "Model bound: $displayName")
   }
 
   fun clearActiveModel() {
+    server = EdgeServerManager.server
     server?.activeModel = null
     server?.activeModelHelper = null
     server?.activeModelDisplayName = ""
+    EdgeServerManager.server?.activeModel = null
+    EdgeServerManager.server?.activeModelHelper = null
+    EdgeServerManager.server?.activeModelDisplayName = ""
   }
 
   fun isServerRunning(): Boolean = server?.isAlive == true
