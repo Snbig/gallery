@@ -232,11 +232,12 @@ class EdgeServer(
   // Streaming response (SSE)
   // ───────────────────────────────────────────────────────────────────────
 
-  private fun handleStreamingResponse(
+private fun handleStreamingResponse(
     model: Model, helper: LlmModelHelper, prompt: String,
     requestId: String, modelId: String,
   ): Response {
-    if (!inferenceLock.tryLock(5, TimeUnit.SECONDS)) {
+    val lockAcquired = ReentrantLock()
+    if (!lockAcquired.tryLock(5, TimeUnit.SECONDS)) {
       return errorResponse(429, "Server busy. Try again later.")
     }
 
@@ -244,9 +245,10 @@ class EdgeServer(
     val pipedIn = PipedInputStream(pipedOut, 64 * 1024)
     val done = AtomicBoolean(false)
 
-    Thread {
+Thread {
+      val latch = CountDownLatch(1)
+      lockAcquired.lock()
       try {
-        val latch = CountDownLatch(1)
         helper.runInference(
           model = model,
           input = prompt,
@@ -284,7 +286,7 @@ class EdgeServer(
         Log.e(TAG, "Inference error", e)
       } finally {
         try { pipedOut.close() } catch (_: Exception) {}
-        inferenceLock.unlock()
+        lockAcquired.unlock()
       }
     }.start()
 
