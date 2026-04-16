@@ -62,9 +62,11 @@ override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
     val existingServer = EdgeServerManager.server
     if (existingServer != null && existingServer.isAlive) {
       server = existingServer
+      syncModelFromManager()
       Log.i(TAG, "Using existing server on $host:$port")
     } else if (server != null && server?.isAlive == true) {
       EdgeServerManager.server = server
+      syncModelFromManager()
       Log.i(TAG, "Using local server on $host:$port")
     } else {
       try {
@@ -72,6 +74,7 @@ override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
       } catch (_: Exception) {}
       server = EdgeServer(hostname = host, port = port)
       EdgeServerManager.server = server
+      syncModelFromManager()
       try {
         server?.start()
         Log.i(TAG, "Edge Server started on $host:$port")
@@ -80,6 +83,16 @@ override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
       }
     }
     return START_STICKY
+  }
+
+  private fun syncModelFromManager() {
+    val manager = EdgeServerManager.server
+    if (manager != null && server != null) {
+      server?.activeModel = manager.activeModel
+      server?.activeModelHelper = manager.activeModelHelper
+      server?.activeModelDisplayName = manager.activeModelDisplayName
+      Log.i(TAG, "Synced model from manager: ${manager.activeModelDisplayName}")
+    }
   }
 
   override fun onDestroy() {
