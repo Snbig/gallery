@@ -30,7 +30,27 @@ import java.util.UUID
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.locks.ReentrantLock
+
+/** Global crash mitigation - track and reset on crashes */
+object CrashMitigation {
+  private var resetInProgress = AtomicBoolean(false)
+  private var crashCount = AtomicInteger(0)
+  private const val MAX_CRASHES_BEFORE_RESET = 2
+  
+  fun recordCrash() {
+    val count = crashCount.incrementAndGet()
+    Log.w("CrashMitigation", "Model crash recorded, count: $count")
+  }
+  
+  fun shouldReset(): Boolean = crashCount.get() >= MAX_CRASHES_BEFORE_RESET
+  
+  fun reset() {
+    crashCount.set(0)
+    resetInProgress.set(false)
+  }
+}
 
 private const val TAG = "EdgeServer"
 
