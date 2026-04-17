@@ -142,7 +142,21 @@ private var service: EdgeServerService? = null
 /** Bind a loaded model so the server can serve inference requests. */
   fun bindModel(model: Model, helper: LlmModelHelper, displayName: String) {
     val alreadyBound = server?.activeModel?.instance != null
-    Log.i(TAG, "bindModel called: displayName=$displayName, alreadyBound=$alreadyBound, modelInstance=${model.instance != null}")
+    val currentDisplayName = server?.activeModelDisplayName
+    
+    // Only rebind if different model or no model bound
+    if (alreadyBound && currentDisplayName == displayName) {
+      Log.d(TAG, "bindModel: Model '$displayName' already bound, skipping")
+      return
+    }
+    
+    Log.i(TAG, "bindModel: displayName=$displayName, alreadyBound=$alreadyBound, modelInstance=${model.instance != null}")
+    
+    // Clean up old model if different
+    if (alreadyBound && currentDisplayName != displayName) {
+      Log.i(TAG, "bindModel: Switching from '$currentDisplayName' to '$displayName'")
+    }
+    
     server?.activeModel = model
     server?.activeModelHelper = helper
     server?.activeModelDisplayName = displayName
