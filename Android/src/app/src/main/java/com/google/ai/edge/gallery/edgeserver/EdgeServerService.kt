@@ -88,6 +88,8 @@ override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
 private fun syncModelFromManager() {
     val manager = EdgeServerManager.server
     Log.d(TAG, "syncModelFromManager: manager=${manager != null}, server=${server != null}, manager.activeModel=${manager?.activeModel?.instance != null}")
+    
+    // Only sync if manager has a valid model with instance
     if (manager != null && server != null && manager.activeModel?.instance != null) {
       server?.activeModel = manager.activeModel
       server?.activeModelHelper = manager.activeModelHelper
@@ -98,19 +100,12 @@ private fun syncModelFromManager() {
       return
     }
     
-    // If no model synced from manager, check if we have a saved model name
-    // and try to reinitialize via modelFinder callback
+    // If manager has no valid model, check if we have a saved model name
+    // but DON'T set it - just log that we need the model reloaded
     val savedModel = EdgeServerManager.loadSavedModelName()
     if (!savedModel.isNullOrEmpty()) {
-      server?.activeModelDisplayName = savedModel
-      Log.i(TAG, "Using saved model name: $savedModel, triggering modelFinder...")
-      
-      // Try to trigger model re-initialization
-      val modelFinder = manager?.modelFinder
-      if (modelFinder != null) {
-        Log.i(TAG, "Invoking modelFinder to reload model")
-        modelFinder.invoke()
-      }
+      Log.i(TAG, "Saved model name: $savedModel but instance not available. Model needs to be reloaded via app.")
+// Don't set activeModelDisplayName - let the app handle reload
     }
   }
 

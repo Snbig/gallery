@@ -141,6 +141,12 @@ private var service: EdgeServerService? = null
 
 /** Bind a loaded model so the server can serve inference requests. */
   fun bindModel(model: Model, helper: LlmModelHelper, displayName: String) {
+    // Refuse to bind if model doesn't have instance loaded yet
+    if (model.instance == null) {
+      Log.w(TAG, "bindModel: Model instance not loaded yet, skipping bind. displayName=$displayName")
+      return
+    }
+    
     val alreadyBound = server?.activeModel?.instance != null
     val currentDisplayName = server?.activeModelDisplayName
     
