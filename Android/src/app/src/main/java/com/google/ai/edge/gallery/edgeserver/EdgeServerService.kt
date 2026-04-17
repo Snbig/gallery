@@ -88,20 +88,28 @@ override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
 private fun syncModelFromManager() {
     val manager = EdgeServerManager.server
     Log.d(TAG, "syncModelFromManager: manager=${manager != null}, server=${server != null}, manager.activeModel=${manager?.activeModel?.instance != null}")
-    if (manager != null && server != null) {
+    if (manager != null && server != null && manager.activeModel?.instance != null) {
       server?.activeModel = manager.activeModel
       server?.activeModelHelper = manager.activeModelHelper
       server?.activeModelDisplayName = manager.activeModelDisplayName
       if (manager.activeModelDisplayName.isNotEmpty()) {
         Log.i(TAG, "Synced model from manager: displayName=${manager.activeModelDisplayName}, instance=${manager.activeModel?.instance != null}")
       }
+      return
     }
-    // If no model synced, check saved model name
-    if (server?.activeModel == null) {
-      val savedModel = EdgeServerManager.loadSavedModelName()
-      if (!savedModel.isNullOrEmpty()) {
-        server?.activeModelDisplayName = savedModel
-        Log.i(TAG, "Using saved model name: $savedModel")
+    
+    // If no model synced from manager, check if we have a saved model name
+    // and try to reinitialize via modelFinder callback
+    val savedModel = EdgeServerManager.loadSavedModelName()
+    if (!savedModel.isNullOrEmpty()) {
+      server?.activeModelDisplayName = savedModel
+      Log.i(TAG, "Using saved model name: $savedModel, triggering modelFinder...")
+      
+      // Try to trigger model re-initialization
+      val modelFinder = manager?.modelFinder
+      if (modelFinder != null) {
+        Log.i(TAG, "Invoking modelFinder to reload model")
+        modelFinder.invoke()
       }
     }
   }
