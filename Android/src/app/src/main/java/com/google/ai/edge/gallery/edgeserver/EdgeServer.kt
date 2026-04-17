@@ -204,6 +204,30 @@ val model = activeModel
     val modelInstanceAddr = System.identityHashCode(model?.instance)
     Log.d(TAG, "Model instance hashCode: $modelInstanceAddr")
     
+    // Check if model reference exists but instance is lost (re-initialization happened)
+    if (model != null && model.instance == null) {
+      Log.w(TAG, "Model reference exists but instance is NULL - model was likely re-initialized. Attempting recovery...")
+      // Try to recover by triggering modelFinder
+      val finder = modelFinder
+      if (finder != null) {
+        Log.i(TAG, "Invoking modelFinder to recover model")
+        finder.invoke()
+        // Wait briefly for recovery
+        Thread.sleep(2000)
+        // Re-check
+        val recoveredModel = activeModel
+        if (recoveredModel?.instance != null) {
+          Log.i(TAG, "Model recovered: ${recoveredModel.name}")
+          return handleChatCompletions(session)
+        }
+      }
+      // Clear stale reference
+      activeModel = null
+      activeModelHelper = null
+      activeModelDisplayName = ""
+      Log.w(TAG, "Could not recover model, cleared stale reference")
+    }
+    
     if (model == null || helper == null || model.instance == null) {
       Log.w(TAG, "No model loaded - activeModel=${activeModel != null}, instance=${activeModel?.instance != null}")
       return errorResponse(503, "No model loaded. Open the Gallery app and load a model first.")
