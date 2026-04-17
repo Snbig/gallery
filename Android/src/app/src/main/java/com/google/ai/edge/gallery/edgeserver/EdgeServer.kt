@@ -165,9 +165,11 @@ class EdgeServer(
       return errorResponse(400, "Invalid JSON: ${e.message}")
     }
 
-    val model = activeModel
+val model = activeModel
     val helper = activeModelHelper
+    Log.d(TAG, "handleChatCompletions: model=${model != null}, instance=${model?.instance != null}, helper=${helper != null}")
     if (model == null || helper == null || model.instance == null) {
+      Log.w(TAG, "No model loaded - activeModel=${activeModel != null}, instance=${activeModel?.instance != null}")
       return errorResponse(503, "No model loaded. Open the Gallery app and load a model first.")
     }
 
@@ -241,8 +243,10 @@ private fun handleStreamingResponse(
     model: Model, helper: LlmModelHelper, prompt: String,
     requestId: String, modelId: String,
   ): Response {
+    Log.d(TAG, "handleStreamingResponse START: model=${model.name}, promptLen=${prompt.length}")
     val lockAcquired = ReentrantLock()
     if (!lockAcquired.tryLock(5, TimeUnit.SECONDS)) {
+      Log.w(TAG, "handleStreamingResponse: LOCK FAILED - server busy")
       return errorResponse(429, "Server busy. Try again later.")
     }
 
