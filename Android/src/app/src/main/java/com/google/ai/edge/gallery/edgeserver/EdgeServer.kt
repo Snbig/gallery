@@ -83,7 +83,18 @@ class EdgeServer(
 
 // Auto-discover model if not yet bound.
     val modelLoaded = activeModel?.instance != null
-    Log.d(TAG, "serve() called: activeModel=${activeModel != null}, modelLoaded=$modelLoaded, displayName=$activeModelDisplayName")
+    val hasModelRef = activeModel != null
+    val hasInstance = activeModel?.instance != null
+    Log.d(TAG, "serve() called: activeModel=${hasModelRef}, modelLoaded=$modelLoaded, instance=${hasInstance}, displayName=$activeModelDisplayName")
+    
+    // If we have a model reference but no instance, clear the reference too
+    if (hasModelRef && !hasInstance) {
+      Log.w(TAG, "Model reference exists but instance is null - clearing model reference")
+      activeModel = null
+      activeModelHelper = null
+      activeModelDisplayName = ""
+    }
+    
     if (!modelLoaded) {
       Log.w(TAG, "No model instance loaded - trying auto-discover")
       tryAutoDiscoverModel()
@@ -167,7 +178,12 @@ class EdgeServer(
 
 val model = activeModel
     val helper = activeModelHelper
-    Log.d(TAG, "handleChatCompletions: model=${model != null}, instance=${model?.instance != null}, helper=${helper != null}")
+    Log.d(TAG, "handleChatCompletions: model=${model != null}, instance=${model?.instance != null}, helper=${helper != null}, modelName=${model?.name}")
+    
+    // Get model instance address for debugging
+    val modelInstanceAddr = System.identityHashCode(model?.instance)
+    Log.d(TAG, "Model instance hashCode: $modelInstanceAddr")
+    
     if (model == null || helper == null || model.instance == null) {
       Log.w(TAG, "No model loaded - activeModel=${activeModel != null}, instance=${activeModel?.instance != null}")
       return errorResponse(503, "No model loaded. Open the Gallery app and load a model first.")
